@@ -1,8 +1,6 @@
 <#
 .SYNOPSIS
-    Short description
-.DESCRIPTION
-    Long description
+    This script is rollovering the Kerberos decryption keys for Azure Seamless SSO.
 .EXAMPLE
     PS C:\> .\SSOSeamlessKeyRollover.ps1
 .NOTES
