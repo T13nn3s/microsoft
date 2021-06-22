@@ -32,10 +32,12 @@ function CheckSpfDmarc {
         write-host ""
         Write-Host "------------------- $d -------------------"
         Write-Host "------------------- DMARC -------------------"
-        $DMARC = (nslookup -q=txt _dmarc.$d | select-string "DMARC1") -replace "`t", ""
+        $DmarcValue = (nslookup -q=txt _dmarc.$d | select-string "DMARC1") -replace "`t", ""
+        $regex_dmarc = [Regex]::new("(?<=text = )(.*)(?= )")
+        $DMARC = $regex_dmarc.Match($DmarcValue).Value
         if ($DMARC -match "p=none") {
             $DMARC
-            Write-Host "$d has a valid DMARC record but the DMARC policy does not prevent abuse of your domain by phishers and spammers." -ForegroundColor Yellow
+            Write-Host "$d has a valid DMARC record but the DMARC (subdomain) policy does not prevent abuse of your domain by phishers and spammers." -ForegroundColor Yellow
         }
         elseif ($DMARC -match "p=quarantine") {
             $DMARC
@@ -66,8 +68,36 @@ function CheckSpfDmarc {
             Write-Host "No SPF-record configured for $d" -ForegroundColor Red
         }
         Write-Host ""
+
+        Write-Host ""
+        Write-Host "------------------- $d -------------------"
+        Write-Host "------------------- DKIM -------------------"
+        $DkimCname = (nslookup -q=cname selector1._domainkey.$d)
+        if ($DkimCname -match "Can't find") {
+            Write-Host "We couldn't find a DKIM record associated with your domain." -ForegroundColor Red
+        }
+        else {
+            foreach ($r in $DkimCname.Split(" ")) {
+                if ($r -match "onmicrosoft.com") {
+                    $regex1 = [Regex]::new("(?<=canonical name = )(.*)(?=  Authoritative)")
+                    $CnameValue = $regex1.Match($DkimCname).Value
+                    $dkim = (nslookup -q=txt $CnameValue) -replace "`t", ""
+                    $regex = [Regex]::new("(?<=text = )(.*)(?=  Authoritative)")
+                    $DkimValue = $regex.Match($dkim)
+                    if ($dkimvalue.Value -eq $null) {
+                        Write-Host "We couldn't find a DKIM record associated with your domain."
+                    }
+                    else {
+                        $dkimvalue.Value
+                        write-host ""
+                        Write-host "DKIM-record is valid" -ForegroundColor Green
+                    }
+                }  
+            }
+        }
     }
 }
+
 
 if ($domain) {
     CheckSpfDmarc -domain $domain
